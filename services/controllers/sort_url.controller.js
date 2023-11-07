@@ -1,5 +1,6 @@
-import { SORTED_URL } from "../utiles/db.connection.js";
 import shortid from 'shortid';
+import { SORTED_URL } from "../utiles/db.connection.js";
+import { generateId } from '../utiles/autoId.js';
 
 const baseUrl = 'http:localhost:8080';
 
@@ -23,13 +24,17 @@ const urlSort = async(req, res) =>{
         else{
 
             sortedURL = shortid.generate();
-            const genSortedURL = baseUrl + '/' + genSortedURL;
+            const genSortedURL = baseUrl + '/' + sortedURL;
     
             const body = {
+                id : await generateId(),
                 logURL : url,
                 sortURL : sortedURL,
-                urlCode : genSortedURL
+                urlCode : genSortedURL,
+                created_at : new Date(),
+                updated_at : new Date()
             }
+
             await SORTED_URL.insertOne(body);
         }
 
@@ -49,10 +54,12 @@ const urlSort = async(req, res) =>{
 }
 
 const getAllUrls = async(req, res) =>{
+    const offset = Number(req.query.offset) || 0;
+    const limit = Number(req.query.limit) || 0;
 
     try {
 
-        const fatchURL = await SORTED_URL.find({}).toArray();
+        const fatchURL = await SORTED_URL.find({}).sort({id:-1}).skip(offset).limit(limit).toArray();
 
         res.status(201).send({
             status : true,
@@ -71,6 +78,7 @@ const getAllUrls = async(req, res) =>{
 
 const redirect_originalLink = async(req, res) =>{
     const url = req.params.url;
+    console.log("url ",url);
     try {
 
         const fatchURL = await SORTED_URL.findOne({sortURL : url});
